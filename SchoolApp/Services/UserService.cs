@@ -70,43 +70,43 @@ namespace SchoolApp.Services
 
         public async Task<UserReadOnlyDTO?> GetUserByUsernameAsync(string username)
         {
-            try
-            {
-                User? user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(username);
 
-                if (user is null)
-                {
-                    throw new EntityNotFoundException("User", "Enity not found.");
-                }
+            User? user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(username);
 
-                _logger.LogInformation("User found with username={Username}", username);
-                return _mapper.Map<UserReadOnlyDTO>(user);
-            }
-            catch (EntityNotFoundException)
+            if (user is null)
             {
-                _logger.LogError("Error retreiving user with username={Username}.", username);
-                throw;
+                throw new EntityNotFoundException("User", "Enity not found.");
             }
+
+            _logger.LogInformation("User found with username={Username}", username);
+            return _mapper.Map<UserReadOnlyDTO>(user);
+
         }
+
+        public async Task<UserReadOnlyDTO> GetUserByIdAsync(int id)
+        {
+            var user = await _unitOfWork.UserRepository.GetAsync(id);
+
+            if (user == null)
+            {
+                throw new EntityNotFoundException("User", $"User with id {id} not found");
+            }
+
+            _logger.LogInformation("User with id {Id} found", id);
+            return _mapper.Map<UserReadOnlyDTO>(user);
+        }
+
 
         public async Task<User?> VerifyAndGetUserAsync(UserLoginDTO credentials)
         {
-            try
-            {
-                User? user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(credentials.Username!);
+            User? user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(credentials.Username!);
 
-                if (user is null || !_encryptionUtil.IsValidPassword(credentials.Password!, user.Password))
-                {
-                    throw new EntityNotAuthorizedException("Auth", "Bad Credentials");
-                }
-                _logger.LogInformation("User with username={Username} verified for login.", credentials.Username);
-                return user;
-            }
-            catch (EntityNotAuthorizedException)
+            if (user is null || !_encryptionUtil.IsValidPassword(credentials.Password!, user.Password))
             {
-                _logger.LogError("Authentication failed for username={Username}", credentials.Username);
-                return null;
+                throw new EntityNotAuthorizedException("Auth", "Bad Credentials");
             }
+            _logger.LogInformation("User with username={Username} verified for login.", credentials.Username);
+            return user;
         }
 
         public string CreateUserToken(User user)
